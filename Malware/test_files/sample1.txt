@@ -1,2 +1,0 @@
-Este é um arquivo de teste 1.
-Use este arquivo para testar o simulador de criptografia.
