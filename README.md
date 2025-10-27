@@ -46,18 +46,6 @@ O projeto foi desenvolvido em um computador pessoal utilizando o Visual Studio C
 3. **Configure o interpretador Python**  
    - Acesse `Arquivo > Preferências > Configurações`, pesquise por “Python: Caminho do Interpretador” e selecione o Python instalado.
 
-
-## 📁 Estrutura de Diretórios
-
-```
-malware-simulador/
-├── test_files/               # Pasta com arquivos de teste (.txt)
-├── chave.key                 # Chave de criptografia gerada
-├── LEIA ISSO.txt             # Mensagem educativa
-├── ransomware_simulado.py    # Script principal do simulador
-└── README.md                 # Documentação do projeto
-```
-
 ## 📚 Ransomware Simulado
 
 >Este módulo simula o comportamento de um ransomware de forma educativa. O código está comentado linha por linha no arquivo `simransomware.py`.
