@@ -1,0 +1,9 @@
+[right shift] Teste de captura de [BACKSPACE] as teclas digitadas...
+
+123456
+
+123456
+
+[right shift] @edu-2025[right shift] @[right shift] #
+
+[ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] [ctrl] c
